@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = `${supabaseUrl}/rest/v1/profiles?select=status,is_ai_agent,created_at`;
+    const url = `${supabaseUrl}/rest/v1/profiles?select=status,is_ai_agent,created_at,acquisition_source`;
     const upstream = await fetch(url, {
       headers: {
         apikey: serviceKey,
@@ -57,6 +57,7 @@ export default async function handler(req, res) {
     let realUsers = 0;
     let seedUsers = 0;
     const byDay = {};
+    const bySource = {};
 
     for (const row of rows) {
       const status = row.status || 'approved';
@@ -68,6 +69,9 @@ export default async function handler(req, res) {
         realUsers++;
         const day = (row.created_at || '').slice(0, 10);
         if (day) byDay[day] = (byDay[day] || 0) + 1;
+
+        const source = row.acquisition_source || '直接访问/未知';
+        bySource[source] = (bySource[source] || 0) + 1;
       }
     }
 
@@ -77,12 +81,17 @@ export default async function handler(req, res) {
       .reverse()
       .map(([date, count]) => ({ date, count }));
 
+    const acquisitionSources = Object.entries(bySource)
+      .sort((a, b) => b[1] - a[1])
+      .map(([source, count]) => ({ source, count }));
+
     res.status(200).json({
       total: rows.length,
       byStatus,
       realUsers,
       seedUsers,
       dailySignups,
+      acquisitionSources,
       referralCodesIssued,
       referralRedemptions,
     });

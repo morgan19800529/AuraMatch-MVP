@@ -1,16 +1,25 @@
 【💯 满分发帖动作 (算法要求)】：
 1. 上传本文件夹中的【Instagram_专属方形视觉卡.png】；
-2. 复制下方文案直接发布。
+2. 复制下方文案直接发布，在评论区置顶你的邀请码引导互动。
 
-【说明文案】：
+【说明文案 · 版本A】：
 Working remotely from Lisbon hits different when you actually find your tribe across cultural lines. ✨☕
 
-Meet Alex Turner (Scorpio) — Indie SaaS Hacker based in Lisbon, Portugal.
-⚡ 98% Cross-Culture Affinity on AuraMatch Pro
-🎨 Signature Palette: Cyber Indigo
+Meet Alex — Indie Developer based in Lisbon, Portugal (Scorpio).
 💬 "Building open-source AI tools. Down for tech banter & espresso?"
+That's a real AI-generated opener, built from Alex's actual profile — not a template.
 
-AuraMatch Pro automatically analyzes nomad vibes, calculates zodiac compatibility, and generates native openers across 8 languages.
+AuraMatch generates native icebreakers in 4 languages and lets you practice your reply with AI before you say it IRL.
 
-👉 Create your 10s Nomad Profile via link in bio!
+👉 Create your 10s Nomad Profile via link in bio! (auramatch-mvp.vercel.app/?ref=instagram)
+Comment "CODE" for my invite code — bonus energy for both of us 🎁
 #digitalnomad #remotework #solotraveler #indiehacker #lisbon #buildinpublic
+
+【说明文案 · 版本B】：
+Cafe full of interesting people. Everyone behind headphones. Nobody talking to anyone. Sound familiar? 😅
+
+Built AuraMatch to fix that — it writes you a real, specific opener based on someone's actual profile, then lets you rehearse your reply with AI before you say it for real.
+
+Free, no download, works in EN/ES/JA/中文.
+👉 Link in bio — build your card in 10s
+#digitalnomad #remotework #solotraveler #indiehacker #buildinpublic

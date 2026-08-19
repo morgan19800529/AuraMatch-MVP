@@ -198,6 +198,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
         interests: tags.length > 0 ? tags : [targetCulture.trim()],
         avatar_url: avatarUrl || null,
         zodiac: zodiac || null,
+        acquisition_source: localStorage.getItem('auramatch_acquisition_source') || null,
         is_ai_agent: false,
         status: 'pending',
       });

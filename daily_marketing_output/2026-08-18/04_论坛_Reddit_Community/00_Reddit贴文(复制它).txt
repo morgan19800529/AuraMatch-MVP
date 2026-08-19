@@ -1,22 +1,25 @@
 【💯 满分发帖动作 (算法要求)】：
 1. 发在 r/digitalnomad 或 r/solotravel；
-2. 严禁改写成硬广推销，保持第一人称真诚踩坑故事。
+2. 严禁改写成硬广推销，保持第一人称真诚踩坑故事；
+3. 【最重要】发布后第一个小时守着帖子，任何评论都在 10-15 分钟内回复——Reddit 对早期互动速度极敏感，冷场超过 1 小时基本就沉了，晚回复约等于白发。不要主动打广告词，只回答问题、聊你的真实体验。
 
 Title: Why is it so weirdly difficult to break the ice with other nomads in cafes? (Built a tiny tool to fix it)
 
 Hey everyone,
 
-I've been traveling and working remotely across hubs like Lisbon, Portugal, Bali, and Lisbon. 
+I've been traveling and working remotely across hubs like Lisbon, Portugal and Bali.
 
 One recurring pain point:
 You walk into a buzzing coworking cafe. There are 20 other creative people on MacBooks. Everyone looks cool, but 95% of us sit behind noise-canceling headphones, actively avoiding eye contact because opening with "Nice weather today, huh?" feels super cringe.
 
 Language barriers and not knowing someone's vibe make cold approaching awkward as hell.
 
-Last weekend, I built a lightweight web deck called AuraMatch Pro (https://auramatch-mvp.vercel.app) to test a concept:
-1. Zodiac & Vibe Alignment: Matches nomad archetypes (Indie SaaS Hacker) and calculates Aura color palettes.
-2. Local AI Icebreakers: Generates context-aware, native openers across 8 languages with local cultural nuance.
-3. In-App Practice Sandbox: Simulate the conversation before saying hi IRL.
+Last weekend, I built a lightweight web app called AuraMatch (https://auramatch-mvp.vercel.app/?ref=reddit) to test a concept:
+1. Real AI Icebreakers: Generates context-aware, native openers based on someone's actual bio/location/interests — not a generic template — across 4 languages (EN/ES/JA/中文) with local cultural nuance.
+2. In-App Practice Sandbox: Simulate the conversation with AI before saying hi IRL.
+3. Profile Browsing: See other nomads' city, role, zodiac, and interests, filterable by continent.
 4. 100% Free & No Clutter: Instant web app, no 15-step onboarding, zero ads.
 
 Would love your honest feedback on whether this actually makes cafe connections less awkward!
+
+(If anyone wants to try it, happy to drop an invite code in the comments — small energy bonus for both of us, totally optional.)

@@ -1,17 +1,30 @@
 【💯 满分发帖动作 (算法要求)】：
 1. 保持第一人称开发者叙事，切勿修改为生硬广告词；
-2. 搭配本文件夹中的【Twitter_极客横版视觉卡.png】一起发布以获得最大曝光！
+2. 搭配本文件夹中的【Twitter_极客横版视觉卡.png】一起发布以获得最大曝光；
+3. 发布后 1 小时内主动回复前几条评论（哪怕只是感谢），Twitter 算法对早期互动权重很高。
 
-【推文内容】：
+【推文内容 · 版本A】：
 Solo traveling as a remote founder is 80% freedom and 20% staring at your laptop screen wondering how to talk to the person at the next table without being weird.
 
-So I spent 48 hours building AuraMatch Pro 🌍
-⚡ 98% Cross-Cultural & Zodiac Affinity Score
-🎨 Nomad Aura Color Palettes + Vibe Archetypes
-🗣️ AI Icebreakers with native local slang across 8 languages
-💬 Live in-app practice sandbox before you talk IRL
+So I built AuraMatch 🌍
+⚡ Real AI-generated icebreakers, based on the other person's actual profile — not templates
+🗣️ Native openers in 4 languages (EN/ES/JA/中文)
+💬 Practice your reply with AI before you say it IRL
+🃏 Browse real nomad profiles by continent, build yours in 10s
 
-Matched with Alex Turner (Scorpio · Indie SaaS Hacker) in Lisbon, Portugal.
+Free. No signup wall. No clutter.
+👉 https://auramatch-mvp.vercel.app/?ref=twitter #buildinpublic #indiehackers #digitalnomad
 
-Zero clutter. Instant Tinder speed:
-👉 https://auramatch-mvp.vercel.app #buildinpublic #indiehackers #digitalnomad
+Reply with your city and I'll send you an invite code — we both get bonus energy on the app.
+
+【推文内容 · 版本B（更强调"我踩过的坑"叙事）】：
+I used to sit in coworking cafes for hours next to 20 interesting people and talk to literally none of them.
+
+Language barrier + not knowing if someone's even open to chatting = paralysis.
+
+Spent a weekend building AuraMatch to fix my own problem:
+- AI writes a real, specific opener from someone's actual bio (not "hey what's up")
+- You can rehearse the reply with AI first
+- 4 languages, free, no app to download
+
+👉 https://auramatch-mvp.vercel.app/?ref=twitter #buildinpublic #indiehackers

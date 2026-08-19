@@ -1,11 +1,16 @@
-Show IH: AuraMatch Pro – 10s Zodiac compatibility, Aura Palettes & native icebreakers for global nomads
+【💯 满分发帖动作】：
+1. 发布当天早上（PH 通常是太平洋时间午夜刷新榜单）尽早发布，争取全天曝光窗口；
+2. 【最重要】发布后全天守着评论区，PH 上评论互动率直接影响排名，任何提问都要认真、具体地回复，不要用模板话术；
+3. 提前私信几个熟悉的 IndieHackers/PH 朋友，请他们发布后第一时间去支持（真实互动，不要刷票，PH 反作弊很严）。
+
+Show IH: AuraMatch – 10s nomad profile builder with real AI-generated icebreakers (not templates)
 
 Hey builders,
 As a solo developer traveling across global hubs, I noticed how isolated remote workers can be in cafes despite being in the same room.
 
-I launched AuraMatch Pro:
-- Tech Stack: React + TypeScript + Supabase + Vercel
-- Core Value: 10s Nomad Profile Builder + Zodiac & Lifestyle Affinity + Nomad Aura Palettes + Native AI Icebreakers in 8 languages
-- Live Demo: https://auramatch-mvp.vercel.app
+I launched AuraMatch:
+- Tech Stack: React + TypeScript + Supabase + Vercel, AI via DeepSeek
+- Core Value: 10s Nomad Profile Builder + AI Icebreakers generated from the other person's actual profile, in 4 languages (EN/ES/JA/中文) + an in-app AI practice chat before you approach IRL
+- Live Demo: https://auramatch-mvp.vercel.app/?ref=producthunt
 
-Would love your feedback on the UX and onboarding flow!
+Would love your feedback on the UX and onboarding flow! Happy to share invite codes with anyone who wants to try it — small energy bonus for both of us.

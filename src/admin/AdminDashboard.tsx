@@ -18,6 +18,7 @@ interface Stats {
   realUsers: number;
   seedUsers: number;
   dailySignups: { date: string; count: number }[];
+  acquisitionSources?: { source: string; count: number }[];
   referralCodesIssued?: number;
   referralRedemptions?: number;
 }
@@ -133,6 +134,26 @@ export default function AdminDashboard() {
               <StatCard label="已发出邀请码" value={stats.referralCodesIssued || 0} color="#38bdf8" />
               <StatCard label="邀请成功兑换" value={stats.referralRedemptions || 0} color="#f472b6" />
             </div>
+
+            {stats.acquisitionSources && stats.acquisitionSources.length > 0 && (
+              <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10 }}>真实用户来源渠道（按 ?ref= 追踪，"直接访问/未知"是没带渠道标记进来的）</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {stats.acquisitionSources.map((s) => {
+                    const max = Math.max(...stats.acquisitionSources!.map((x) => x.count), 1);
+                    return (
+                      <div key={s.source} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 110, fontSize: 11, color: '#e2e8f0', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.source}</div>
+                        <div style={{ flex: 1, background: '#1e293b', borderRadius: 4, overflow: 'hidden', height: 14 }}>
+                          <div style={{ width: `${(s.count / max) * 100}%`, background: '#f472b6', height: '100%' }} />
+                        </div>
+                        <div style={{ width: 20, fontSize: 11, color: '#e2e8f0', textAlign: 'right', flexShrink: 0 }}>{s.count}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {stats.dailySignups.length > 0 && (
               <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 14, padding: 14 }}>

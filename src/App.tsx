@@ -227,6 +227,21 @@ export default function App() {
     return saved !== null ? Number(saved) : defaultMax;
   });
 
+  // 记录这个人是从哪条营销内容点进来的（?ref=xhs 这种），只在第一次访问时捕获并长期保留，
+  // 后面建卡片时会带上，管理后台就能看出真实是哪个渠道带来的注册，不再是"发出去就不知道有没有用"。
+  useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('utm_source');
+      if (ref) {
+        localStorage.setItem('auramatch_acquisition_source', ref.slice(0, 40));
+      }
+    } catch {
+      // 忽略解析失败，不影响正常使用
+    }
+    return '';
+  });
+
   // 每台设备一个匿名身份（不是账号系统，但足够让邀请关系落到 Supabase 里真实可查）。
   const [deviceId] = useState<string>(() => {
     let id = localStorage.getItem('auramatch_device_id');
