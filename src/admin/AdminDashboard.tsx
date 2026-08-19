@@ -18,6 +18,8 @@ interface Stats {
   realUsers: number;
   seedUsers: number;
   dailySignups: { date: string; count: number }[];
+  referralCodesIssued?: number;
+  referralRedemptions?: number;
 }
 
 export default function AdminDashboard() {
@@ -128,6 +130,8 @@ export default function AdminDashboard() {
               <StatCard label="已驳回" value={stats.byStatus.rejected || 0} color="#f87171" />
               <StatCard label="真实用户" value={stats.realUsers} color="#a78bfa" />
               <StatCard label="种子/演示" value={stats.seedUsers} color="#64748b" />
+              <StatCard label="已发出邀请码" value={stats.referralCodesIssued || 0} color="#38bdf8" />
+              <StatCard label="邀请成功兑换" value={stats.referralRedemptions || 0} color="#f472b6" />
             </div>
 
             {stats.dailySignups.length > 0 && (

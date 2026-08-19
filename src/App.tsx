@@ -209,7 +209,18 @@ export default function App() {
     return saved !== null ? Number(saved) : defaultMax;
   });
 
-  const [myInviteCode] = useState<string>(() => {
+  // 每台设备一个匿名身份（不是账号系统，但足够让邀请关系落到 Supabase 里真实可查）。
+  const [deviceId] = useState<string>(() => {
+    let id = localStorage.getItem('auramatch_device_id');
+    if (!id) {
+      id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem('auramatch_device_id', id);
+    }
+    return id;
+  });
+
+  const [myInviteCode, setMyInviteCode] = useState<string>(() => {
+    // 先用本地兜底码顶一下，避免首屏空白；拿到服务端真码后会替换掉。
     let code = localStorage.getItem('auramatch_my_invite_code');
     if (!code) {
       code = 'AURA' + Math.floor(1000 + Math.random() * 9000);
@@ -222,6 +233,7 @@ export default function App() {
   const [hasRedeemedCode, setHasRedeemedCode] = useState<boolean>(() => {
     return localStorage.getItem('auramatch_redeemed_code') === 'true';
   });
+  const [redeemingCode, setRedeemingCode] = useState(false);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const [hasClaimedToday, setHasClaimedToday] = useState<boolean>(() => {
@@ -320,6 +332,52 @@ export default function App() {
     }
     loadCloudProfiles();
   }, []);
+
+  // 拉取/注册这台设备在服务端真正持久化的邀请码，并顺手查一下有没有好友刚兑换成功、还没领的奖励。
+  useEffect(() => {
+    async function syncReferral() {
+      try {
+        const codeResp = await fetch('/api/referral-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId }),
+        });
+        const codeData = await codeResp.json();
+        if (codeResp.ok && codeData.code) {
+          setMyInviteCode(codeData.code);
+          localStorage.setItem('auramatch_my_invite_code', codeData.code);
+        }
+      } catch {
+        // 服务端拉不到就先用本地兜底码，不影响正常使用
+      }
+
+      try {
+        const claimResp = await fetch('/api/referral-claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId }),
+        });
+        const claimData = await claimResp.json();
+        if (claimResp.ok && claimData.rewardEnergy > 0) {
+          setEnergy((prevE) => {
+            const nextE = prevE + claimData.rewardEnergy;
+            localStorage.setItem('auramatch_daily_energy', String(nextE));
+            return nextE;
+          });
+          showToast(
+            lang === 'zh'
+              ? `🎉 你邀请的好友已建卡，+${claimData.rewardEnergy} 能量到账！`
+              : `🎉 Your invited friend joined! +${claimData.rewardEnergy} Energy added!`,
+            4000
+          );
+        }
+      } catch {
+        // 静默失败，下次打开再试
+      }
+    }
+    syncReferral();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deviceId]);
 
   const filteredProfiles = useMemo(() => {
     if (filterContinent === 'all') return profiles;
@@ -422,7 +480,7 @@ export default function App() {
     showToast(lang === 'zh' ? '🗑️ 你的名片已下架，已恢复为基础 10 点体验额度' : '🗑️ Card deactivated. Reverted to 10 basic energy.');
   };
 
-  const handleRedeemInviteCode = () => {
+  const handleRedeemInviteCode = async () => {
     if (!inputInviteCode.trim()) {
       showToast(lang === 'zh' ? '请输入邀请码' : 'Please enter an invite code');
       return;
@@ -436,14 +494,46 @@ export default function App() {
       return;
     }
 
-    const nextE = energy + 20;
-    setEnergy(nextE);
-    localStorage.setItem('auramatch_daily_energy', String(nextE));
-    setHasRedeemedCode(true);
-    localStorage.setItem('auramatch_redeemed_code', 'true');
-    setInputInviteCode('');
-    setShowShareModal(false);
-    showToast(lang === 'zh' ? '🎁 邀请码兑换成功！已到账 +20 能量！' : '🎁 Code redeemed! +20 Energy added!', 3000);
+    setRedeemingCode(true);
+    try {
+      // 真正去服务端校验这个码是否存在、是否已经被这台设备兑换过
+      const resp = await fetch('/api/referral-redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, code: inputInviteCode.trim().toUpperCase() }),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        const msg =
+          data.error === 'invalid_code'
+            ? (lang === 'zh' ? '邀请码不存在，请检查后重试' : 'Invite code not found')
+            : data.error === 'self_redeem'
+            ? (lang === 'zh' ? '不能兑换自己的邀请码' : 'Cannot redeem your own code')
+            : data.error === 'already_redeemed'
+            ? (lang === 'zh' ? '你已经兑换过好友邀请码了' : 'You have already redeemed a code')
+            : (lang === 'zh' ? '兑换失败，请稍后重试' : 'Redeem failed, please try again later');
+        showToast(msg);
+        if (data.error === 'already_redeemed') {
+          setHasRedeemedCode(true);
+          localStorage.setItem('auramatch_redeemed_code', 'true');
+        }
+        return;
+      }
+
+      const nextE = energy + 20;
+      setEnergy(nextE);
+      localStorage.setItem('auramatch_daily_energy', String(nextE));
+      setHasRedeemedCode(true);
+      localStorage.setItem('auramatch_redeemed_code', 'true');
+      setInputInviteCode('');
+      setShowShareModal(false);
+      showToast(lang === 'zh' ? '🎁 邀请码兑换成功！已到账 +20 能量！' : '🎁 Code redeemed! +20 Energy added!', 3000);
+    } catch {
+      showToast(lang === 'zh' ? '网络错误，请稍后重试' : 'Network error, please try again later');
+    } finally {
+      setRedeemingCode(false);
+    }
   };
 
   const handleStartChat = () => {
@@ -1003,9 +1093,10 @@ export default function App() {
               />
               <button
                 onClick={handleRedeemInviteCode}
-                style={{ backgroundColor: '#ec4899', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', cursor: 'pointer' }}
+                disabled={redeemingCode}
+                style={{ backgroundColor: '#ec4899', color: '#fff', fontWeight: 'bold', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', cursor: redeemingCode ? 'not-allowed' : 'pointer', opacity: redeemingCode ? 0.7 : 1 }}
               >
-                {t.redeemBtn}
+                {redeemingCode ? '...' : t.redeemBtn}
               </button>
             </div>
 

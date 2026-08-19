@@ -37,6 +37,22 @@ export default async function handler(req, res) {
 
     const rows = await upstream.json();
 
+    // 顺带查一下真实裂变数据：发出去多少个邀请码、成功兑换了多少次
+    let referralCodesIssued = 0;
+    let referralRedemptions = 0;
+    try {
+      const [codesResp, redemptionsResp] = await Promise.all([
+        fetch(`${supabaseUrl}/rest/v1/referral_codes?select=device_id`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Prefer: 'count=exact' } }),
+        fetch(`${supabaseUrl}/rest/v1/referral_redemptions?select=id`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Prefer: 'count=exact' } }),
+      ]);
+      const codesCountHeader = codesResp.headers.get('content-range');
+      const redemptionsCountHeader = redemptionsResp.headers.get('content-range');
+      referralCodesIssued = codesCountHeader ? Number(codesCountHeader.split('/')[1]) || 0 : 0;
+      referralRedemptions = redemptionsCountHeader ? Number(redemptionsCountHeader.split('/')[1]) || 0 : 0;
+    } catch {
+      // 裂变统计拉取失败不影响主统计返回
+    }
+
     const byStatus = { approved: 0, pending: 0, rejected: 0 };
     let realUsers = 0;
     let seedUsers = 0;
@@ -67,6 +83,8 @@ export default async function handler(req, res) {
       realUsers,
       seedUsers,
       dailySignups,
+      referralCodesIssued,
+      referralRedemptions,
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error', detail: String(err).slice(0, 300) });
