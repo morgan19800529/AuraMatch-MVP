@@ -913,6 +913,13 @@ export default function App() {
 
       </div>
 
+      {/* 全局页脚：不管在哪个 tab 都能看到，避免用户协议链接被藏在某个具体状态里才显示 */}
+      <div style={{ flexShrink: 0, textAlign: 'center', padding: '8px 0 2px', fontSize: '10px', color: '#475569' }}>
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#475569', textDecoration: 'underline' }}>
+          {lang === 'zh' ? '隐私政策与服务条款' : 'Privacy Policy & Terms'}
+        </a>
+      </div>
+
       {/* Toast */}
       {toastMsg && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#10b981', color: '#020617', padding: '8px 18px', borderRadius: '24px', fontWeight: '900', fontSize: '12px', zIndex: 3000, boxShadow: '0 10px 25px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>
