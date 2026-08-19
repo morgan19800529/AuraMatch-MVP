@@ -553,9 +553,10 @@ export default function App() {
 
         {/* 1. 顶部纯净导航（已完全剥离管理员入口，前台与后台绝对物理隔离） */}
         <header style={{ flexShrink: 0, paddingBottom: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.4)', marginBottom: '8px' }}>
-          {/* 第一行：品牌 + 语言切换 + 能量/加油站（固定位置，不受 tab 文案长度影响） */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+          {/* 第一行：品牌 + 语言切换 + 能量/加油站。加了 flexWrap，任何语言下文字变长时
+              右侧这组会自动换到第二行显示，而不是被裁切到看不见/点不到。 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: '6px', columnGap: '4px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, flexShrink: 0 }}>
               <span
                 style={{ fontSize: '17px', fontWeight: '900', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', flexShrink: 0 }}
               >
@@ -574,7 +575,7 @@ export default function App() {
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0, marginLeft: 'auto' }}>
               <div
                 onClick={() => setShowShareModal(true)}
                 style={{ backgroundColor: energy > 0 ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.2)', border: energy > 0 ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(239, 68, 68, 0.4)', color: energy > 0 ? '#facc15' : '#ef4444', fontSize: '10px', fontWeight: 'bold', padding: '2px 5px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
