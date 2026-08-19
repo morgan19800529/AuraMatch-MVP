@@ -552,57 +552,63 @@ export default function App() {
       <div style={{ width: '100%', maxWidth: '460px', height: '100dvh', display: 'flex', flexDirection: 'column', padding: '10px 14px 14px 14px', boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
 
         {/* 1. 顶部纯净导航（已完全剥离管理员入口，前台与后台绝对物理隔离） */}
-        <header style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.4)', marginBottom: '8px', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-            <span 
-              style={{ fontSize: '17px', fontWeight: '900', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-            >
-              AuraMatch.
-            </span>
-            
-            <select
-              value={lang}
-              onChange={e => switchLanguage(e.target.value as SupportedLang)}
-              style={{ backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', fontSize: '10px', padding: '1px 3px', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="en">🇺🇸 EN</option>
-              <option value="zh">🇨🇳 中文</option>
-              <option value="es">🇪🇸 ES</option>
-              <option value="ja">🇯🇵 日本語</option>
-            </select>
+        <header style={{ flexShrink: 0, paddingBottom: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.4)', marginBottom: '8px' }}>
+          {/* 第一行：品牌 + 语言切换 + 能量/加油站（固定位置，不受 tab 文案长度影响） */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+              <span
+                style={{ fontSize: '17px', fontWeight: '900', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', flexShrink: 0 }}
+              >
+                AuraMatch.
+              </span>
 
-            <div 
-              onClick={() => setShowShareModal(true)}
-              style={{ backgroundColor: energy > 0 ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.2)', border: energy > 0 ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(239, 68, 68, 0.4)', color: energy > 0 ? '#facc15' : '#ef4444', fontSize: '10px', fontWeight: 'bold', padding: '2px 5px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-              title="Energy & Fuel Station"
-            >
-              ⚡ {energy}/{maxDailyEnergy}
+              <select
+                value={lang}
+                onChange={e => switchLanguage(e.target.value as SupportedLang)}
+                style={{ backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', fontSize: '10px', padding: '1px 3px', outline: 'none', cursor: 'pointer', flexShrink: 0 }}
+              >
+                <option value="en">🇺🇸 EN</option>
+                <option value="zh">🇨🇳 中文</option>
+                <option value="es">🇪🇸 ES</option>
+                <option value="ja">🇯🇵 日本語</option>
+              </select>
             </div>
 
-            <button
-              onClick={() => setShowShareModal(true)}
-              style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', border: '1px solid rgba(236, 72, 153, 0.4)', color: '#f472b6', fontSize: '10px', fontWeight: '900', padding: '2px 5px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-            >
-              🎁 {t.fuel}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+              <div
+                onClick={() => setShowShareModal(true)}
+                style={{ backgroundColor: energy > 0 ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.2)', border: energy > 0 ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(239, 68, 68, 0.4)', color: energy > 0 ? '#facc15' : '#ef4444', fontSize: '10px', fontWeight: 'bold', padding: '2px 5px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                title="Energy & Fuel Station"
+              >
+                ⚡ {energy}/{maxDailyEnergy}
+              </div>
+
+              <button
+                onClick={() => setShowShareModal(true)}
+                style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', border: '1px solid rgba(236, 72, 153, 0.4)', color: '#f472b6', fontSize: '10px', fontWeight: '900', padding: '2px 5px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                🎁 {t.fuel}
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          {/* 第二行：三个 tab 各占等宽，文案再长也只在自己格子里变化，不会挤到别的按钮 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <button
               onClick={() => setActiveTab('explore')}
-              style={{ backgroundColor: activeTab === 'explore' ? '#38bdf8' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'explore' ? '#020617' : '#94a3b8', border: 'none', padding: '5px 7px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              style={{ flex: 1, minWidth: 0, backgroundColor: activeTab === 'explore' ? '#38bdf8' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'explore' ? '#020617' : '#94a3b8', border: 'none', padding: '7px 4px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {t.explore}
             </button>
             <button
               onClick={() => setActiveTab('plaza')}
-              style={{ backgroundColor: activeTab === 'plaza' ? '#6366f1' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'plaza' ? '#ffffff' : '#94a3b8', border: 'none', padding: '5px 7px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              style={{ flex: 1, minWidth: 0, backgroundColor: activeTab === 'plaza' ? '#6366f1' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'plaza' ? '#ffffff' : '#94a3b8', border: 'none', padding: '7px 4px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {t.plaza}
             </button>
             <button
               onClick={() => setActiveTab('profile')}
-              style={{ backgroundColor: activeTab === 'profile' ? '#10b981' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'profile' ? '#020617' : '#94a3b8', border: 'none', padding: '5px 7px', borderRadius: '10px', fontSize: '10px', fontWeight: '900', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              style={{ flex: 1, minWidth: 0, backgroundColor: activeTab === 'profile' ? '#10b981' : 'rgba(30, 41, 59, 0.8)', color: activeTab === 'profile' ? '#020617' : '#94a3b8', border: 'none', padding: '7px 4px', borderRadius: '10px', fontSize: '11px', fontWeight: '900', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {t.profile}
             </button>
