@@ -60,6 +60,7 @@ export interface Translations {
   bioPlaceholder: string;
   tagPlaceholder: string;
   addTagBtn: string;
+  zodiacPlaceholder: string;
   submitBtn: string;
   submittingBtn: string;
 }
@@ -125,6 +126,7 @@ export const translations: Record<SupportedLang, Translations> = {
     bioPlaceholder: '一句话自我介绍与搭子期待...',
     tagPlaceholder: '兴趣标签 (输入后点添加)',
     addTagBtn: '+ 添加',
+    zodiacPlaceholder: '选择星座 (可选)',
     submitBtn: '🚀 立即上架名片 · 解锁每日50点',
     submittingBtn: '安全机审与上架中...'
   },
@@ -188,6 +190,7 @@ export const translations: Record<SupportedLang, Translations> = {
     bioPlaceholder: 'Short bio & vibe you are seeking...',
     tagPlaceholder: 'Interest tag (Press enter)',
     addTagBtn: '+ Add',
+    zodiacPlaceholder: 'Select Zodiac (optional)',
     submitBtn: '🚀 Publish Card · Unlock 50 Daily Energy',
     submittingBtn: 'Moderating & Publishing...'
   },
@@ -251,6 +254,7 @@ export const translations: Record<SupportedLang, Translations> = {
     bioPlaceholder: 'Breve biografía...',
     tagPlaceholder: 'Etiqueta de interés',
     addTagBtn: '+ Añadir',
+    zodiacPlaceholder: 'Elegir signo (opcional)',
     submitBtn: '🚀 Publicar Tarjeta · 50 Diarios',
     submittingBtn: 'Publicando...'
   },
@@ -314,6 +318,7 @@ export const translations: Record<SupportedLang, Translations> = {
     bioPlaceholder: '自己紹介と求める仲間について...',
     tagPlaceholder: '興味タグ (入力して追加)',
     addTagBtn: '+ 追加',
+    zodiacPlaceholder: '星座を選ぶ (任意)',
     submitBtn: '🚀 カードを公開 · 毎日50枠解放',
     submittingBtn: '審査＆公開中...'
   }

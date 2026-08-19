@@ -12,6 +12,12 @@ interface CreateCardModalProps {
 
 const MAX_BIO_LENGTH = 80;
 
+const ZODIAC_SIGNS = [
+  '白羊座 / Aries', '金牛座 / Taurus', '双子座 / Gemini', '巨蟹座 / Cancer',
+  '狮子座 / Leo', '处女座 / Virgo', '天秤座 / Libra', '天蝎座 / Scorpio',
+  '射手座 / Sagittarius', '摩羯座 / Capricorn', '水瓶座 / Aquarius', '双鱼座 / Pisces',
+];
+
 export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClose, onCreated, lang = 'zh' }) => {
   const t = translations[lang] || translations.en;
 
@@ -19,6 +25,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
   const [age, setAge] = useState('');
   const [nativeCulture, setNativeCulture] = useState('');
   const [targetCulture, setTargetCulture] = useState('');
+  const [zodiac, setZodiac] = useState('');
   const [bio, setBio] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -52,6 +59,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
     setAge('');
     setNativeCulture('');
     setTargetCulture('');
+    setZodiac('');
     setBio('');
     setTagInput('');
     setTags([]);
@@ -189,6 +197,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
         bio: bio.trim(),
         interests: tags.length > 0 ? tags : [targetCulture.trim()],
         avatar_url: avatarUrl || null,
+        zodiac: zodiac || null,
         is_ai_agent: false,
         status: 'pending',
       });
@@ -202,6 +211,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
         name: name.trim(),
         age: ageNum,
         location: nativeCulture.trim(),
+        zodiac: zodiac || '',
         bio: bio.trim(),
         tags: tags.length > 0 ? tags : [targetCulture.trim()],
         photo: avatarUrl,
@@ -217,6 +227,7 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
         name: name.trim(),
         age: ageNum,
         location: nativeCulture.trim(),
+        zodiac: zodiac || '',
         bio: bio.trim(),
         tags: tags.length > 0 ? tags : [targetCulture.trim()],
         photo: photoData || previewUrl || '',
@@ -352,6 +363,17 @@ export const CreateCardModal: React.FC<CreateCardModalProps> = ({ isOpen, onClos
             placeholder={t.tribePlaceholder}
             style={inputStyle}
           />
+
+          <select
+            value={zodiac}
+            onChange={(e) => setZodiac(e.target.value)}
+            style={{ ...inputStyle, color: zodiac ? '#f9fafb' : '#6b7280' }}
+          >
+            <option value="">{t.zodiacPlaceholder}</option>
+            {ZODIAC_SIGNS.map((sign) => (
+              <option key={sign} value={sign}>{sign}</option>
+            ))}
+          </select>
 
           <textarea
             value={bio}

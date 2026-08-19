@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = `${supabaseUrl}/rest/v1/profiles?status=eq.pending&select=id,full_name,age,native_culture,target_culture,bio,interests,avatar_url,created_at&order=created_at.desc`;
+    const url = `${supabaseUrl}/rest/v1/profiles?status=eq.pending&select=id,full_name,age,native_culture,target_culture,zodiac,bio,interests,avatar_url,created_at&order=created_at.desc`;
     const upstream = await fetch(url, {
       headers: {
         apikey: serviceKey,
