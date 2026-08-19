@@ -1,0 +1,22 @@
+【💯 满分发帖动作 (算法要求)】：
+1. 发在 r/digitalnomad 或 r/solotravel；
+2. 严禁改写成硬广推销，保持第一人称真诚踩坑故事。
+
+Title: Why is it so weirdly difficult to break the ice with other nomads in cafes? (Built a tiny tool to fix it)
+
+Hey everyone,
+
+I've been traveling and working remotely across hubs like Lisbon, Portugal, Bali, and Lisbon. 
+
+One recurring pain point:
+You walk into a buzzing coworking cafe. There are 20 other creative people on MacBooks. Everyone looks cool, but 95% of us sit behind noise-canceling headphones, actively avoiding eye contact because opening with "Nice weather today, huh?" feels super cringe.
+
+Language barriers and not knowing someone's vibe make cold approaching awkward as hell.
+
+Last weekend, I built a lightweight web deck called AuraMatch Pro (https://auramatch-mvp.vercel.app) to test a concept:
+1. Zodiac & Vibe Alignment: Matches nomad archetypes (Indie SaaS Hacker) and calculates Aura color palettes.
+2. Local AI Icebreakers: Generates context-aware, native openers across 8 languages with local cultural nuance.
+3. In-App Practice Sandbox: Simulate the conversation before saying hi IRL.
+4. 100% Free & No Clutter: Instant web app, no 15-step onboarding, zero ads.
+
+Would love your honest feedback on whether this actually makes cafe connections less awkward!

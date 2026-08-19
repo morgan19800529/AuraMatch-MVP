@@ -1,0 +1,11 @@
+Show IH: AuraMatch Pro – 10s Zodiac compatibility, Aura Palettes & native icebreakers for global nomads
+
+Hey builders,
+As a solo developer traveling across global hubs, I noticed how isolated remote workers can be in cafes despite being in the same room.
+
+I launched AuraMatch Pro:
+- Tech Stack: React + TypeScript + Supabase + Vercel
+- Core Value: 10s Nomad Profile Builder + Zodiac & Lifestyle Affinity + Nomad Aura Palettes + Native AI Icebreakers in 8 languages
+- Live Demo: https://auramatch-mvp.vercel.app
+
+Would love your feedback on the UX and onboarding flow!
