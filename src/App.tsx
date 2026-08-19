@@ -83,7 +83,12 @@ const PRESET_NOMADS: NomadProfile[] = [
   }
 ];
 
-const localizeContent = (text: string, currentLang: SupportedLang, type: 'location' | 'tribe' | 'bio') => {
+// 兜底真翻译的缓存：静态对照表没覆盖到的文本，会去调 /api/translate 补一次真翻译，
+// 结果缓存在这里，同一段文本 + 同一语言只会真正调用一次 AI。
+const aiTranslationCache = new Map<string, string>();
+const aiTranslationPending = new Set<string>();
+
+const staticLocalize = (text: string, currentLang: SupportedLang, type: 'location' | 'tribe' | 'bio') => {
   if (!text || currentLang === 'zh') return text;
 
   if (type === 'location') {
@@ -170,6 +175,19 @@ const localizeContent = (text: string, currentLang: SupportedLang, type: 'locati
   }
 
   return text;
+};
+
+const CJK_REGEX = /[一-鿿]/;
+
+// 对外用的版本：先查静态对照表（免费、即时），表里没覆盖到、翻完还带中文字符的，
+// 再去查 AI 翻译缓存兜底；缓存还没到位之前先展示原文，不会让卡片空着。
+const localizeContent = (text: string, currentLang: SupportedLang, type: 'location' | 'tribe' | 'bio') => {
+  const staticResult = staticLocalize(text, currentLang, type);
+  if (!text || currentLang === 'zh' || !CJK_REGEX.test(staticResult)) return staticResult;
+
+  const cacheKey = `${currentLang}|${type}|${text}`;
+  const cached = aiTranslationCache.get(cacheKey);
+  return cached || staticResult;
 };
 
 export default function App() {
@@ -383,6 +401,62 @@ export default function App() {
     if (filterContinent === 'all') return profiles;
     return profiles.filter(p => p.continent === filterContinent);
   }, [profiles, filterContinent]);
+
+  const [, bumpTranslationTick] = useState(0);
+
+  // 静态对照表没覆盖到的文本（比如真实用户自己填的常驻地/物种/简介），批量丢给 AI 翻译一次，
+  // 结果存进模块级缓存，localizeContent 下次渲染就能直接用上。
+  useEffect(() => {
+    if (lang === 'zh') return;
+
+    const needed: { key: string; text: string }[] = [];
+    const seen = new Set<string>();
+    const collect = (text: string | undefined, type: 'location' | 'tribe' | 'bio') => {
+      if (!text) return;
+      const staticResult = staticLocalize(text, lang, type);
+      if (!CJK_REGEX.test(staticResult)) return; // 静态表已经处理好了
+      const cacheKey = `${lang}|${type}|${text}`;
+      if (aiTranslationCache.has(cacheKey) || aiTranslationPending.has(cacheKey) || seen.has(cacheKey)) return;
+      seen.add(cacheKey);
+      needed.push({ key: cacheKey, text });
+    };
+
+    filteredProfiles.slice(0, 30).forEach((p) => {
+      collect(p.location, 'location');
+      collect(p.tribe, 'tribe');
+      collect(p.bio, 'bio');
+    });
+    if (myProfile) {
+      collect(myProfile.location, 'location');
+      collect(myProfile.tribe, 'tribe');
+      collect(myProfile.bio, 'bio');
+    }
+
+    if (needed.length === 0) return;
+    needed.forEach((n) => aiTranslationPending.add(n.key));
+
+    (async () => {
+      try {
+        const resp = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: needed, targetLang: lang }),
+        });
+        const data = await resp.json();
+        if (resp.ok && data.translations) {
+          Object.entries(data.translations).forEach(([key, val]) => {
+            if (typeof val === 'string') aiTranslationCache.set(key, val);
+          });
+          bumpTranslationTick((n) => n + 1);
+        }
+      } catch {
+        // 翻译失败就先保持原文，不影响正常使用
+      } finally {
+        needed.forEach((n) => aiTranslationPending.delete(n.key));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, filteredProfiles, myProfile]);
 
   const currentNomad = useMemo(() => {
     const found = filteredProfiles.find(p => p.id === activeNomadId);
