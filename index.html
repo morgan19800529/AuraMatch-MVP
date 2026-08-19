@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AuraMatch - Cross-Cultural Connections</title>
+    <!-- Tailwind CDN 兜底保证样式全量生效 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        margin: 0;
+        background-color: #090d16;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- 增加版本号后缀，强行打断 CDN / 浏览器硬缓存 -->
+    <script type="module" src="/src/main.tsx?v=20260814"></script>
+  </body>
+</html>

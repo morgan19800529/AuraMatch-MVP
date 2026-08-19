@@ -183,7 +183,7 @@ export default function App() {
 
   const [profiles, setProfiles] = useState<NomadProfile[]>(PRESET_NOMADS);
   const [activeNomadId, setActiveNomadId] = useState<string>(PRESET_NOMADS[0].id);
-  const [activeTab, setActiveTab] = useState<'explore' | 'plaza' | 'profile' | 'admin'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'plaza' | 'profile'>('explore');
   const [filterContinent, setFilterContinent] = useState<string>('all');
 
   const [myProfile, setMyProfile] = useState<NomadProfile | null>(() => {
@@ -237,6 +237,9 @@ export default function App() {
   const [inputMsg, setInputMsg] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [chatWarning, setChatWarning] = useState('');
+  const [aiIcebreaker, setAiIcebreaker] = useState<{ en: string; zh: string } | null>(null);
+  const [icebreakerLoading, setIcebreakerLoading] = useState(false);
+  const [chatReplyLoading, setChatReplyLoading] = useState(false);
 
   const switchLanguage = (newLang: SupportedLang) => {
     setLang(newLang);
@@ -246,6 +249,35 @@ export default function App() {
   const showToast = (text: string, duration = 2500) => {
     setToastMsg(text);
     setTimeout(() => setToastMsg(''), duration);
+  };
+
+  // 真正调 DeepSeek 生成破冰词；接口挂了就退回卡片自带的静态模板文案，不会让按钮卡死或报错给用户看。
+  const handleOpenIcebreaker = async (nomad: NomadProfile) => {
+    setShowIcebreakerModal(true);
+    setAiIcebreaker(null);
+    setIcebreakerLoading(true);
+    try {
+      const resp = await fetch('/api/icebreaker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: nomad.name,
+          nativeCulture: nomad.location,
+          targetCulture: nomad.tribe,
+          bio: nomad.bio,
+        }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.en) {
+        setAiIcebreaker({ en: data.en, zh: data.zh || data.en });
+      } else {
+        setAiIcebreaker(null);
+      }
+    } catch {
+      setAiIcebreaker(null);
+    } finally {
+      setIcebreakerLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -265,7 +297,7 @@ export default function App() {
               age: item.age || 25,
               location: loc,
               continent: parseGlobalContinent(loc),
-              zodiac: 'Verified Nomad',
+              zodiac: item.zodiac || 'Verified Nomad',
               tribe: item.target_culture || 'Remote Explorer',
               bio: item.bio || 'Exploring the world...',
               tags: Array.isArray(item.interests) ? item.interests : [item.target_culture || 'Nomad'],
@@ -339,7 +371,7 @@ export default function App() {
       age: newCard.age,
       location: newCard.location,
       continent: parseGlobalContinent(loc),
-      zodiac: 'My Card',
+      zodiac: newCard.zodiac || 'My Card',
       tribe: newCard.tags[0] || 'Nomad',
       bio: newCard.bio,
       tags: newCard.tags,
@@ -357,7 +389,13 @@ export default function App() {
     setEnergy(50);
     localStorage.setItem('auramatch_daily_energy', '50');
     setActiveTab('explore');
-    showToast(lang === 'zh' ? '🎉 名片已上架！已解锁每日 50 点探索额度！' : '🎉 Card published! Unlocked 50 daily energy!', 3500);
+    // 卡片现在会先进入人工审核队列，通过前只有提交者自己这一场会话能看到。
+    showToast(
+      newCard.pending
+        ? (lang === 'zh' ? '🎉 名片已提交！正在审核中，通过后将对所有人可见。已解锁每日 50 点探索额度！' : '🎉 Submitted! Your card is under review and will go public once approved. 50 daily energy unlocked!')
+        : (lang === 'zh' ? '🎉 名片已上架！已解锁每日 50 点探索额度！' : '🎉 Card published! Unlocked 50 daily energy!'),
+      4000
+    );
   };
 
   const handleDeleteMyCard = async () => {
@@ -408,20 +446,6 @@ export default function App() {
     showToast(lang === 'zh' ? '🎁 邀请码兑换成功！已到账 +20 能量！' : '🎁 Code redeemed! +20 Energy added!', 3000);
   };
 
-  const handleAdminBanCard = async (cardId: string) => {
-    if (!window.confirm('确认要下架并封禁该名片吗？')) return;
-    try {
-      if (cardId.startsWith('cloud-')) {
-        const rawDbId = cardId.replace('cloud-', '');
-        await supabase.from('profiles').delete().eq('id', rawDbId);
-      }
-      setProfiles(prev => prev.filter(p => p.id !== cardId));
-      showToast('🛡️ 该名片已被下架封禁');
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleStartChat = () => {
     if (!currentNomad) return;
     if (energy < 3) {
@@ -433,9 +457,9 @@ export default function App() {
     setEnergy(nextE);
     localStorage.setItem('auramatch_daily_energy', String(nextE));
 
-    const initialText = lang === 'zh' 
-      ? (currentNomad.icebreakerZh || `嗨！我是 ${currentNomad.name}，很高兴认识你！`)
-      : (currentNomad.icebreakerEn || `Hey! I'm ${currentNomad.name}, great connecting with you!`);
+    const initialText = lang === 'zh'
+      ? (aiIcebreaker?.zh || currentNomad.icebreakerZh || `嗨！我是 ${currentNomad.name}，很高兴认识你！`)
+      : (aiIcebreaker?.en || currentNomad.icebreakerEn || `Hey! I'm ${currentNomad.name}, great connecting with you!`);
 
     setChatMessages([
       {
@@ -449,9 +473,9 @@ export default function App() {
     showToast(lang === 'zh' ? '⚡ 开启对练消耗 3 能量，本场对话免费畅聊' : '⚡ 3 Energy used. Chat freely in this session!');
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMsg.trim() || !currentNomad) return;
+    if (!inputMsg.trim() || !currentNomad || chatReplyLoading) return;
     const userText = inputMsg.trim();
 
     const check = checkTextModeration(userText);
@@ -462,22 +486,39 @@ export default function App() {
     }
 
     const newMsg = { sender: 'user' as const, text: userText, time: 'Just now' };
-    setChatMessages(prev => [...prev, newMsg]);
+    const historyForApi = [...chatMessages, newMsg];
+    setChatMessages(historyForApi);
     setInputMsg('');
     setChatWarning('');
+    setChatReplyLoading(true);
 
-    setTimeout(() => {
+    const fallbackReply = lang === 'zh'
+      ? `"${userText}" 很有意思！你目前在哪个城市旅居办公呢？☕`
+      : (lang === 'es' ? `¡Qué interesante "${userText}"! ¿En qué ciudad estás trabajando ahora? ☕` : `Awesome! "${userText}" sounds fascinating. Where are you currently nomading? ☕`);
+
+    try {
+      const resp = await fetch('/api/chat-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: currentNomad.name,
+          nativeCulture: currentNomad.location,
+          targetCulture: currentNomad.tribe,
+          bio: currentNomad.bio,
+          lang,
+          history: historyForApi,
+        }),
+      });
+      const data = await resp.json();
       setChatMessages(prev => [
         ...prev,
-        {
-          sender: 'nomad',
-          text: lang === 'zh'
-            ? `"${userText}" 很有意思！你目前在哪个城市旅居办公呢？☕`
-            : (lang === 'es' ? `¡Qué interesante "${userText}"! ¿En qué ciudad estás trabajando ahora? ☕` : `Awesome! "${userText}" sounds fascinating. Where are you currently nomading? ☕`),
-          time: 'Just now'
-        }
+        { sender: 'nomad', text: (resp.ok && data.reply) ? data.reply : fallbackReply, time: 'Just now' }
       ]);
-    }, 1100);
+    } catch {
+      setChatMessages(prev => [...prev, { sender: 'nomad', text: fallbackReply, time: 'Just now' }]);
+    } finally {
+      setChatReplyLoading(false);
+    }
   };
 
   const handlePlatformShare = (platformName: string) => {
@@ -510,12 +551,11 @@ export default function App() {
       {/* 流体主视口容器 */}
       <div style={{ width: '100%', maxWidth: '460px', height: '100dvh', display: 'flex', flexDirection: 'column', padding: '10px 14px 14px 14px', boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
 
-        {/* 1. 顶部主流导航 (优化弹性间距，彻底消除西班牙语 Perfil 截断) */}
+        {/* 1. 顶部纯净导航（已完全剥离管理员入口，前台与后台绝对物理隔离） */}
         <header style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.4)', marginBottom: '8px', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
             <span 
-              onClick={() => setActiveTab(prev => prev === 'admin' ? 'explore' : 'admin')}
-              style={{ fontSize: '17px', fontWeight: '900', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', cursor: 'pointer' }}
+              style={{ fontSize: '17px', fontWeight: '900', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             >
               AuraMatch.
             </span>
@@ -570,7 +610,7 @@ export default function App() {
         </header>
 
         {/* 2. 全球五大洲分类栏 */}
-        {(activeTab === 'explore' || activeTab === 'plaza') && (
+        {activeTab !== 'profile' && (
           <div style={{ flexShrink: 0, display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', scrollbarWidth: 'none' }}>
             {[
               { id: 'all', label: `${t.global} (${profiles.length})` },
@@ -656,7 +696,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 独立信息区域 */}
+                {/* 独立信息区域（位置与星座精准展示） */}
                 <div style={{ flexShrink: 0, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#0f172a', borderTop: '1px solid rgba(51, 65, 85, 0.5)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
@@ -672,6 +712,7 @@ export default function App() {
                     <div style={{ display: 'inline-flex', backgroundColor: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#a5b4fc', padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold' }}>
                       💼 {localizeContent(currentNomad.tribe, lang, 'tribe')}
                     </div>
+                    {/* 星座标签完美展示 */}
                     {currentNomad.zodiac && (
                       <div style={{ display: 'inline-flex', backgroundColor: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)', color: '#facc15', padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold' }}>
                         ✨ {currentNomad.zodiac}
@@ -696,7 +737,7 @@ export default function App() {
               {/* AI 破冰语 */}
               <div style={{ flexShrink: 0, marginTop: '8px' }}>
                 <button
-                  onClick={() => setShowIcebreakerModal(true)}
+                  onClick={() => currentNomad && handleOpenIcebreaker(currentNomad)}
                   style={{
                     width: '100%',
                     padding: '9px',
@@ -717,7 +758,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 操作栏 */}
+              {/* 操作栏（纯净前台，无任何删除按钮） */}
               <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                 <button
                   onClick={handlePass}
@@ -753,6 +794,10 @@ export default function App() {
 
               <div style={{ flexShrink: 0, textAlign: 'center', marginTop: '6px', fontSize: '10px', color: '#64748b' }}>
                 {t.securityNote}
+                {' · '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#64748b', textDecoration: 'underline' }}>
+                  {lang === 'zh' ? '隐私政策' : 'Privacy Policy'}
+                </a>
               </div>
             </div>
           ) : (
@@ -818,6 +863,7 @@ export default function App() {
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#fff' }}>{myProfile.name}, {myProfile.age}</div>
                   <div style={{ fontSize: '12px', color: '#38bdf8', marginTop: '2px' }}>📍 {localizeContent(myProfile.location, lang, 'location')}</div>
                   <div style={{ fontSize: '12px', color: '#a5b4fc', marginTop: '2px' }}>💼 {localizeContent(myProfile.tribe, lang, 'tribe')}</div>
+                  {myProfile.zodiac && <div style={{ fontSize: '12px', color: '#facc15', marginTop: '2px' }}>✨ {myProfile.zodiac}</div>}
                 </div>
 
                 <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5', backgroundColor: '#1e293b', padding: '10px', borderRadius: '10px' }}>
@@ -862,56 +908,6 @@ export default function App() {
                 </button>
               </div>
             )}
-          </div>
-        )}
-
-        {/* 6. 开发者中台 */}
-        {activeTab === 'admin' && (
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '14px' }}>
-            <div style={{ backgroundColor: '#1e293b', padding: '14px', borderRadius: '16px', border: '1px solid #f59e0b' }}>
-              <div style={{ fontSize: '14px', fontWeight: '900', color: '#f59e0b', marginBottom: '6px' }}>
-                🛡️ Admin Dashboard (Multi-Lang Moderation)
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '10px', textAlign: 'center' }}>
-                <div style={{ backgroundColor: '#0f172a', padding: '8px', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#38bdf8' }}>{profiles.length}</div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>Cards</div>
-                </div>
-                <div style={{ backgroundColor: '#0f172a', padding: '8px', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981' }}>100%</div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>AI Passed</div>
-                </div>
-                <div style={{ backgroundColor: '#0f172a', padding: '8px', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#ec4899' }}>0</div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>Banned</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {profiles.map(p => (
-                <div key={p.id} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                    <img src={p.photo} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', backgroundColor: '#000' }} />
-                    <div style={{ overflow: 'hidden' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {p.name} ({p.age}) · {localizeContent(p.location, 'en', 'location')}
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {localizeContent(p.tribe, 'en', 'tribe')} | {p.isPreset ? 'Preset' : 'User UGC'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleAdminBanCard(p.id)}
-                    style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '5px 9px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0 }}
-                  >
-                    Ban
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
@@ -1066,14 +1062,27 @@ export default function App() {
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f8fafc' }}>🪄 AI Zodiac Icebreaker</span>
               <button onClick={() => setShowIcebreakerModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
-            <div style={{ backgroundColor: '#1e293b', padding: '10px', borderRadius: '10px', marginBottom: '8px' }}>
-              <div style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '4px' }}>🇬🇧 English Version:</div>
-              <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>"{currentNomad.icebreakerEn}"</div>
-            </div>
-            <div style={{ backgroundColor: '#1e293b', padding: '10px', borderRadius: '10px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', color: '#f472b6', fontWeight: 'bold', marginBottom: '4px' }}>🇨🇳 Context / Translation:</div>
-              <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>"{currentNomad.icebreakerZh}"</div>
-            </div>
+            {icebreakerLoading ? (
+              <div style={{ padding: '20px 0', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
+                {lang === 'zh' ? '🤖 AI 正在生成专属破冰词…' : '🤖 AI is writing your icebreaker…'}
+              </div>
+            ) : (
+              <>
+                <div style={{ backgroundColor: '#1e293b', padding: '10px', borderRadius: '10px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '4px' }}>🇬🇧 English Version:</div>
+                  <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>"{aiIcebreaker?.en || currentNomad.icebreakerEn}"</div>
+                </div>
+                <div style={{ backgroundColor: '#1e293b', padding: '10px', borderRadius: '10px', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '11px', color: '#f472b6', fontWeight: 'bold', marginBottom: '4px' }}>🇨🇳 Context / Translation:</div>
+                  <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>"{aiIcebreaker?.zh || currentNomad.icebreakerZh}"</div>
+                </div>
+                {!aiIcebreaker && (
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '-8px', marginBottom: '12px' }}>
+                    {lang === 'zh' ? '（AI 暂时不可用，已显示默认文案）' : '(AI unavailable right now, showing default text)'}
+                  </div>
+                )}
+              </>
+            )}
             <button
               onClick={() => {
                 setShowIcebreakerModal(false);
@@ -1115,6 +1124,13 @@ export default function App() {
                   <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', textAlign: msg.sender === 'user' ? 'right' : 'left' }}>{msg.time}</div>
                 </div>
               ))}
+              {chatReplyLoading && (
+                <div style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+                  <div style={{ backgroundColor: '#1e293b', color: '#94a3b8', padding: '8px 12px', borderRadius: '14px 14px 14px 4px', fontSize: '12px' }}>
+                    {lang === 'zh' ? '对方正在输入…' : 'typing…'}
+                  </div>
+                </div>
+              )}
             </div>
 
             {chatWarning && (
@@ -1130,7 +1146,7 @@ export default function App() {
                 placeholder={t.chatInputPlaceholder}
                 style={{ flex: 1, backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '8px 10px', color: '#ffffff', fontSize: '12px', outline: 'none' }}
               />
-              <button type="submit" style={{ backgroundColor: '#10b981', color: '#020617', fontWeight: '900', border: 'none', borderRadius: '10px', padding: '0 14px', fontSize: '12px', cursor: 'pointer' }}>
+              <button type="submit" disabled={chatReplyLoading} style={{ backgroundColor: '#10b981', color: '#020617', fontWeight: '900', border: 'none', borderRadius: '10px', padding: '0 14px', fontSize: '12px', cursor: chatReplyLoading ? 'not-allowed' : 'pointer', opacity: chatReplyLoading ? 0.6 : 1 }}>
                 {t.send}
               </button>
             </form>
@@ -1138,7 +1154,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 11. 建名片弹窗 */}
+      {/* 建名片弹窗 */}
       <CreateCardModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
