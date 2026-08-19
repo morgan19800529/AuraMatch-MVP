@@ -1,8 +1,18 @@
 // 服务端函数：用 DeepSeek 对建卡文本做一次 AI 语义审核，作为前端关键词过滤之外的第二层。
 // 设计上"失败即放行"：AI 审核挂了不能因此把正常用户挡在门外，前端关键词过滤 + 后台人工审核仍会兜底。
+import { checkRateLimit } from './_rateLimit.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  // 限流也要"失败即放行"：被限流时直接判 pass，交给关键词过滤 + 人工审核兜底，
+  // 不能因为限流把正常用户的建卡卡在这里。
+  const rl = checkRateLimit(req, 'moderate-text', 40, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    res.status(200).json({ passed: true, note: 'rate limited, fallback to keyword filter' });
     return;
   }
 

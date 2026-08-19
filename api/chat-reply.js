@@ -1,7 +1,16 @@
 // 服务端函数：为"双语对练"聊天生成真实 AI 回复（角色扮演成该游民名片）。
+import { checkRateLimit } from './_rateLimit.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  // 简单按 IP 限流，防止脚本高频调用刷爆 DeepSeek 账单/函数调用额度
+  const rl = checkRateLimit(req, 'chat-reply', 30, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    res.status(429).json({ error: 'Too many requests, please slow down' });
     return;
   }
 

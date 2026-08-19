@@ -1,8 +1,17 @@
 // 服务端函数：真实调用 DeepSeek 生成破冰词。
 // DEEPSEEK_API_KEY 只存在于 Vercel 服务端环境变量里，浏览器永远拿不到。
+import { checkRateLimit } from './_rateLimit.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  // 简单按 IP 限流，防止脚本高频调用刷爆 DeepSeek 账单/函数调用额度
+  const rl = checkRateLimit(req, 'icebreaker', 20, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    res.status(429).json({ error: 'Too many requests, please slow down' });
     return;
   }
 
