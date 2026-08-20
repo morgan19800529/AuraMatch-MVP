@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { CreateCardModal } from './components/CreateCardModal';
 import { supabase } from './lib/supabase';
 import { checkTextModeration, parseGlobalContinent } from './lib/moderation';
@@ -262,6 +262,16 @@ export default function App() {
     return code;
   });
 
+  const [referralStats, setReferralStats] = useState<{
+    totalInvites: number;
+    badge: string | null;
+    nextTierAt: number | null;
+    nextTierBonus: number | null;
+    nextTierBadge: string | null;
+  }>({ totalInvites: 0, badge: null, nextTierAt: 3, nextTierBonus: 50, nextTierBadge: '🌱 增长新星' });
+  const [showPosterModal, setShowPosterModal] = useState(false);
+  const posterCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const [inputInviteCode, setInputInviteCode] = useState('');
   const [hasRedeemedCode, setHasRedeemedCode] = useState<boolean>(() => {
     return localStorage.getItem('auramatch_redeemed_code') === 'true';
@@ -380,6 +390,15 @@ export default function App() {
           setMyInviteCode(codeData.code);
           localStorage.setItem('auramatch_my_invite_code', codeData.code);
         }
+        if (codeResp.ok && typeof codeData.totalInvites === 'number') {
+          setReferralStats({
+            totalInvites: codeData.totalInvites,
+            badge: codeData.badge ?? null,
+            nextTierAt: codeData.nextTierAt ?? null,
+            nextTierBonus: codeData.nextTierBonus ?? null,
+            nextTierBadge: codeData.nextTierBadge ?? null,
+          });
+        }
       } catch {
         // 服务端拉不到就先用本地兜底码，不影响正常使用
       }
@@ -398,11 +417,18 @@ export default function App() {
             return nextE;
           });
           showToast(
-            lang === 'zh'
-              ? `🎉 你邀请的好友已建卡，+${claimData.rewardEnergy} 能量到账！`
-              : `🎉 Your invited friend joined! +${claimData.rewardEnergy} Energy added!`,
-            4000
+            claimData.newBadge
+              ? (lang === 'zh'
+                  ? `🎉 邀请达成新里程碑！解锁徽章「${claimData.newBadge}」，+${claimData.rewardEnergy} 能量到账！`
+                  : `🎉 New referral milestone! Unlocked badge "${claimData.newBadge}", +${claimData.rewardEnergy} Energy!`)
+              : (lang === 'zh'
+                  ? `🎉 你邀请的好友已建卡，+${claimData.rewardEnergy} 能量到账！`
+                  : `🎉 Your invited friend joined! +${claimData.rewardEnergy} Energy added!`),
+            4500
           );
+        }
+        if (claimResp.ok && typeof claimData.totalInvites === 'number') {
+          setReferralStats((prev) => ({ ...prev, totalInvites: claimData.totalInvites, badge: claimData.newBadge || prev.badge }));
         }
       } catch {
         // 静默失败，下次打开再试
@@ -411,6 +437,161 @@ export default function App() {
     syncReferral();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId]);
+
+  // 生成裂变分享海报：纯 canvas 绘制，不依赖外部图片/字体资源，导出即可下载分享。
+  useEffect(() => {
+    if (!showPosterModal) return;
+    const canvas = posterCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = 1080, H = 1080;
+    canvas.width = W;
+    canvas.height = H;
+
+    const displayName = myProfile?.name || (lang === 'zh' ? '你的游民名片' : 'Your Nomad Card');
+    const location = myProfile?.location || (lang === 'zh' ? '全球游民网络' : 'Global Nomad Network');
+    const zodiacTxt = myProfile?.zodiac || '';
+    const tagline = lang === 'zh'
+      ? 'AI 帮你写出地道破冰词，10 秒建好你的游民名片'
+      : 'AI-crafted icebreakers. Build your nomad card in 10s.';
+
+    // 背景
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#150f2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
+    // 顶部品牌徽标
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 3;
+    roundRect(72, 72, 260, 64, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#a5b4fc';
+    ctx.font = '900 26px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('AURAMATCH', 96, 104);
+
+    // 主标题
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '900 46px sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(lang === 'zh' ? '这是我的游民名片' : 'My Nomad Card', 72, 230);
+
+    // 资料卡片
+    roundRect(72, 270, W - 144, 300, 24);
+    ctx.fillStyle = '#12121f';
+    ctx.fill();
+    ctx.strokeStyle = '#2a2a45';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 头像圆
+    ctx.beginPath();
+    ctx.arc(190, 400, 62, 0, Math.PI * 2);
+    ctx.fillStyle = '#4338ca';
+    ctx.fill();
+    ctx.strokeStyle = '#818cf8';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.font = '54px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('😎', 190, 405);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '900 32px sans-serif';
+    ctx.fillText(displayName.slice(0, 16), 280, 390);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(location.slice(0, 22), 280, 428);
+    if (zodiacTxt) {
+      ctx.fillStyle = '#facc15';
+      ctx.font = '20px sans-serif';
+      ctx.fillText('✨ ' + zodiacTxt.slice(0, 20), 280, 460);
+    }
+
+    // 引导语
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '24px sans-serif';
+    const wrapText = (text: string, x: number, y: number, maxWidth: number, lh: number) => {
+      const words = text.split('');
+      let line = '';
+      let yy = y;
+      for (const ch of words) {
+        const test = line + ch;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, x, yy);
+          line = ch;
+          yy += lh;
+        } else {
+          line = test;
+        }
+      }
+      ctx.fillText(line, x, yy);
+      return yy;
+    };
+    wrapText(tagline, 72, 640, W - 144, 34);
+
+    // 邀请码
+    roundRect(72, 700, W - 144, 130, 20);
+    ctx.fillStyle = 'rgba(56,189,248,0.1)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(56,189,248,0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(lang === 'zh' ? '我的邀请码' : 'My invite code', 104, 748);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '900 44px sans-serif';
+    ctx.fillText(myInviteCode, 104, 800);
+    ctx.fillStyle = '#f472b6';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(lang === 'zh' ? '双方各得 +20 能量' : '+20 Energy for both', W - 104, 780);
+    ctx.textAlign = 'left';
+
+    // 底部 CTA
+    roundRect(72, 862, W - 144, 90, 18);
+    ctx.fillStyle = '#10b981';
+    ctx.fill();
+    ctx.fillStyle = '#04120c';
+    ctx.font = '900 30px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(lang === 'zh' ? '10 秒生成你的专属名片' : 'Build Your Nomad Card in 10s', W / 2, 917);
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('auramatch-mvp.vercel.app', W / 2, 1000);
+    ctx.textAlign = 'left';
+  }, [showPosterModal, myProfile, myInviteCode, lang]);
+
+  function downloadPoster() {
+    const canvas = posterCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `auramatch-invite-${myInviteCode}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
 
   const filteredProfiles = useMemo(() => {
     if (filterContinent === 'all') return profiles;
@@ -1172,6 +1353,44 @@ export default function App() {
               <div style={{ fontSize: '18px', fontWeight: '900', color: '#38bdf8', letterSpacing: '2px', marginTop: '4px' }}>{myInviteCode}</div>
             </div>
 
+            {/* 邀请奖励梯度进度条 */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '10px 12px', marginBottom: '10px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  {lang === 'zh' ? '已成功邀请' : 'Successful invites'}: <strong style={{ color: '#facc15' }}>{referralStats.totalInvites}</strong>
+                  {referralStats.badge ? <span style={{ marginLeft: '6px', color: '#a5b4fc' }}>{referralStats.badge}</span> : null}
+                </div>
+                <button
+                  onClick={() => setShowPosterModal(true)}
+                  style={{ backgroundColor: 'rgba(244,114,182,0.15)', border: '1px solid #f472b6', color: '#f472b6', borderRadius: '8px', padding: '4px 8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  🖼️ {lang === 'zh' ? '生成海报' : 'Poster'}
+                </button>
+              </div>
+              {referralStats.nextTierAt !== null ? (
+                <>
+                  <div style={{ width: '100%', height: '6px', backgroundColor: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${Math.min(100, (referralStats.totalInvites / referralStats.nextTierAt) * 100)}%`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #ec4899, #38bdf8)',
+                      borderRadius: '4px',
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
+                    {lang === 'zh'
+                      ? `再邀请 ${Math.max(0, referralStats.nextTierAt - referralStats.totalInvites)} 人解锁「${referralStats.nextTierBadge}」+${referralStats.nextTierBonus} 能量`
+                      : `${Math.max(0, referralStats.nextTierAt - referralStats.totalInvites)} more to unlock "${referralStats.nextTierBadge}" +${referralStats.nextTierBonus} Energy`}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>
+                  🏆 {lang === 'zh' ? '已解锁全部梯度奖励！' : 'All tiers unlocked!'}
+                </div>
+              )}
+            </div>
+
             {/* 兑换好友邀请码 */}
             <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
               <input
@@ -1240,6 +1459,38 @@ export default function App() {
               <button
                 onClick={() => setShowShareModal(false)}
                 style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', padding: '4px' }}
+              >
+                {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 裂变分享海报弹窗 */}
+      {showPosterModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2600, padding: '16px', boxSizing: 'border-box' }} onClick={() => setShowPosterModal(false)}>
+          <div style={{ width: '100%', maxWidth: '360px', maxHeight: '92vh', overflowY: 'auto', backgroundColor: '#0f172a', borderRadius: '20px', border: '1px solid #f472b6', padding: '16px', textAlign: 'center', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '15px', fontWeight: '900', color: '#f472b6', marginBottom: '10px' }}>
+              🖼️ {lang === 'zh' ? '我的专属邀请海报' : 'My Invite Poster'}
+            </div>
+            <canvas
+              ref={posterCanvasRef}
+              style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: '14px', border: '1px solid #2a2a45', display: 'block' }}
+            />
+            <div style={{ fontSize: '10px', color: '#64748b', margin: '8px 0 12px' }}>
+              {lang === 'zh' ? '下载后可直接发到朋友圈/小红书/Instagram 等任意平台' : 'Download and post it anywhere — Instagram, WhatsApp, wherever'}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={downloadPoster}
+                style={{ flex: 1, padding: '10px', borderRadius: '12px', background: 'linear-gradient(135deg, #ec4899, #f472b6)', color: '#fff', fontWeight: '900', fontSize: '13px', border: 'none', cursor: 'pointer' }}
+              >
+                ⬇️ {lang === 'zh' ? '下载海报' : 'Download'}
+              </button>
+              <button
+                onClick={() => setShowPosterModal(false)}
+                style={{ padding: '10px 16px', borderRadius: '12px', backgroundColor: '#1e293b', border: '1px solid #334155', color: '#94a3b8', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
               >
                 {t.close}
               </button>
